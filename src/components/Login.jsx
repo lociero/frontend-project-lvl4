@@ -1,11 +1,16 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Container, Row, Col, Card, Image, FloatingLabel, Form, Button,
 } from 'react-bootstrap';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 import slackLogo from '../imgs/login_img.jpeg';
+
+import { useAuth } from '../contexts/auth';
+import api from '../routes.js';
 
 const schema = yup.object().shape({
   username: yup.string()
@@ -13,22 +18,46 @@ const schema = yup.object().shape({
     .max(24, 'Слишком длинный ник!')
     .required('Обязательное поле для заполнения'),
   password: yup.string()
-    .min(6, 'Слишком короткий пароль!')
+    .min(4, 'Слишком короткий пароль!')
     .max(256, 'Слишком длинный пароль!')
     .required('Обязательное поле для заполнения'),
 });
 
 const Login = () => {
+  const { updateToken } = useAuth();
+  const [isAuthSuccess, updateAuthSuccess] = useState(false);
+  const [error, updateError] = useState(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isAuthSuccess) {
+      navigate('/');
+    }
+  }, [isAuthSuccess]);
+
+  const signIn = async ({ username, password }) => {
+    const payload = { username, password };
+    const { token: authToken, error: authError } = await axios
+      .post(api.signInPath(), payload)
+      .then((res) => res.data)
+      .catch((res) => res.response.data);
+    updateToken(authToken);
+    if (!authError) {
+      updateAuthSuccess((prev) => !prev);
+    } else {
+      updateError(authError);
+    }
+  };
+
   const formik = useFormik({
     initialValues: {
       username: '',
       password: '',
     },
-    onSubmit: (values) => {
-      console.log(JSON.stringify(values, null, 2));
-    },
+    onSubmit: signIn,
     validationSchema: schema,
   });
+
   return (
     <Container fluid className="h-100">
       <Row className="justify-content-center align-content-center h-100">
@@ -40,7 +69,7 @@ const Login = () => {
                   <Image src={slackLogo} roundedCircle />
                 </Col>
                 <Col xs={12} md={6}>
-                  <Form onSubmit={formik.handleSubmit}>
+                  <Form onSubmit={formik.handleSubmit} noValidate>
                     <h1 className="mb-4">Войти</h1>
                     <FloatingLabel
                       controlId="username"
@@ -55,6 +84,7 @@ const Login = () => {
                         onChange={formik.handleChange}
                         value={formik.values.username}
                         autoComplete="off"
+                        isInvalid={!!error}
                       />
                     </FloatingLabel>
                     <FloatingLabel controlId="password" label="Пароль" className="mb-4">
@@ -65,7 +95,9 @@ const Login = () => {
                         placeholder="Пароль"
                         onChange={formik.handleChange}
                         value={formik.values.password}
+                        isInvalid={!!error}
                       />
+                      <Form.Control.Feedback type="invalid" tooltip>Неверное имя пользователя или пароль!</Form.Control.Feedback>
                     </FloatingLabel>
                     <Button className="w-100" variant="outline-primary" size="lg" type="submit">
                       Войти
