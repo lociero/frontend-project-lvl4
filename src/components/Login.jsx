@@ -41,8 +41,8 @@ const Login = () => {
       .post(api.signInPath(), payload)
       .then((res) => res.data)
       .catch((res) => res.response.data);
-    updateToken(authToken);
     if (!authError) {
+      updateToken(authToken);
       updateAuthSuccess((prev) => !prev);
     } else {
       updateError(authError);

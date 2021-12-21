@@ -1,33 +1,27 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
-  BrowserRouter, Route, Routes, Navigate,
+  BrowserRouter, Route, Routes,
 } from 'react-router-dom';
-import { authContext } from '../contexts/auth.js';
+import { Provider } from 'react-redux';
+
+import AuthProvider from '../providers/AuthProvider.jsx';
+import PrivateRoute from './PrivateRoute.jsx';
+import store from '../store/store.js';
 import Login from './Login.jsx';
 import NotFoundPage from './NotFoundPage.jsx';
+import Chat from './Chat.jsx';
 
-const App = () => {
-  const authToken = localStorage.getItem('authToken');
-  const [token, setToken] = useState(authToken);
-  const updateToken = (newToken) => {
-    localStorage.setItem('authToken', newToken);
-    setToken(newToken);
-  };
-
-  return (
-    <authContext.Provider value={{ token, updateToken }}>
+const App = () => (
+  <Provider store={store}>
+    <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route
-            path="/"
-            element={token ? <div>main page</div> : <Navigate to="/login" />}
-          />
+          <Route path="/" element={<PrivateRoute component={Chat} />} />
           <Route path="/login" element={<Login />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </BrowserRouter>
-    </authContext.Provider>
-  );
-};
-
+    </AuthProvider>
+  </Provider>
+);
 export default App;
